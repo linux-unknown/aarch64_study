@@ -1,0 +1,62 @@
+boot-wrapper-aarch64的编译log
+
+assin@assin-pc:~/armv8/boot-wrapper-aarch64$ ./make_linux_axf.sh 
+test -z "linux-system.axf boot.o cache.o gic.o mmu.o ns.o psci.o model.lds fdt.dtb" || rm -f linux-system.axf boot.o cache.o gic.o mmu.o ns.o psci.o model.lds fdt.dtb
+configure: WARNING: you should use --build, --host, --target
+checking build system type... Invalid configuration `rw': machine `rw' not recognized
+configure: error: /bin/sh ./config.sub rw failed
+aarch64-linux-gnu-gcc  -g -O2 -DCNTFRQ=0x01800000	 -DCPU_IDS=0x0,0x1,0x2,0x3 -DSYSREGS_BASE=0x000000001c010000 -DUART_BASE=0x000000001c090000  -DGIC_CPU_BASE=0x000000002c002000 -DGIC_DIST_BASE=0x000000002c001000 -c -o boot.o boot.S
+aarch64-linux-gnu-gcc  -g -O2 -DCNTFRQ=0x01800000	 -DCPU_IDS=0x0,0x1,0x2,0x3 -DSYSREGS_BASE=0x000000001c010000 -DUART_BASE=0x000000001c090000  -DGIC_CPU_BASE=0x000000002c002000 -DGIC_DIST_BASE=0x000000002c001000 -c -o cache.o cache.S
+aarch64-linux-gnu-gcc  -g -O2 -DCNTFRQ=0x01800000	 -DCPU_IDS=0x0,0x1,0x2,0x3 -DSYSREGS_BASE=0x000000001c010000 -DUART_BASE=0x000000001c090000  -DGIC_CPU_BASE=0x000000002c002000 -DGIC_DIST_BASE=0x000000002c001000 -c -o gic.o gic.S
+aarch64-linux-gnu-gcc  -g -O2 -DCNTFRQ=0x01800000	 -DCPU_IDS=0x0,0x1,0x2,0x3 -DSYSREGS_BASE=0x000000001c010000 -DUART_BASE=0x000000001c090000  -DGIC_CPU_BASE=0x000000002c002000 -DGIC_DIST_BASE=0x000000002c001000 -c -o mmu.o mmu.S
+aarch64-linux-gnu-gcc  -g -O2 -DCNTFRQ=0x01800000	 -DCPU_IDS=0x0,0x1,0x2,0x3 -DSYSREGS_BASE=0x000000001c010000 -DUART_BASE=0x000000001c090000  -DGIC_CPU_BASE=0x000000002c002000 -DGIC_DIST_BASE=0x000000002c001000 -c -o ns.o ns.S
+aarch64-linux-gnu-gcc  -g -O2 -DCNTFRQ=0x01800000	 -DCPU_IDS=0x0,0x1,0x2,0x3 -DSYSREGS_BASE=0x000000001c010000 -DUART_BASE=0x000000001c090000  -DGIC_CPU_BASE=0x000000002c002000 -DGIC_DIST_BASE=0x000000002c001000 -c -o psci.o psci.S
+
+生成连接脚本model.lds
+aarch64-linux-gnu-gcc -E  -ansi -DPHYS_OFFSET=0x0000000080000000 -DMBOX_OFFSET=0xfff8 -DKERNEL_OFFSET=0x80000 -DFDT_OFFSET=0x08000000 -DFS_OFFSET=0x10000000 -DKERNEL=/home/assin/linux/linux_mainline/arch/arm64/boot/Image -DFILESYSTEM= -DBOOTMETHOD=psci.o -DGIC=gic.o -P -C -o model.lds model.lds.S
+
+修改dtb中的chosen节点和psic
+( /home/assin/bin/dtc -O dts -I dtb /home/assin/linux/linux_mainline/arch/arm64/boot/dts/arm/foundation-v8.dtb ; echo "/ { chosen { bootargs = \"console=ttyAMA0\"; }; psci { compatible = \"arm,psci\"; method = \"smc\"; cpu_on = <0x84000002>; cpu_off = <0x84000001>; }; cpus { cpu@0 { 	enable-method = \"psci\";   reg = <0 0x0>; }; cpu@1 { 	enable-method = \"psci\"; 	reg = <0 0x1>; }; cpu@2 { 	enable-method = \"psci\"; 	reg = <0 0x2>; }; cpu@3 {   enable-method = \"psci\"; 	reg = <0 0x3>; }; }; };" ) | /home/assin/bin/dtc -O dtb -o fdt.dtb -
+<stdout>: Warning (unit_address_vs_reg): Node /smb has a reg or ranges property, but no unit name
+fdt.dtb: Warning (unit_address_vs_reg): Node /smb has a reg or ranges property, but no unit name
+
+链接生成linux-system.axf
+aarch64-linux-gnu-ld -o linux-system.axf --script=model.lds
+
+
+model.lds内容如下：
+
+OUTPUT_FORMAT("elf64-littleaarch64")
+OUTPUT_ARCH(aarch64)
+TARGET(binary)
+INPUT(./boot.o) /*INPUT用来包含二进制的文件用于link,不会被包含在一个特别的段中*/
+INPUT(./cache.o)
+INPUT(./gic.o)
+INPUT(./mmu.o)
+INPUT(./ns.o)
+INPUT(./spin.o)
+INPUT(/home/assin/linux/linux_mainline/arch/arm64/boot/Image)
+INPUT(./fdt.dtb)
+SECTIONS
+{
+ . = 0x0000000080000000;
+ .text : { boot.o }
+ .text : { cache.o }
+ .text : { gic.o }
+ .text : { mmu.o }
+ .text : { ns.o }
+ .text : { spin.o }
+ . = 0x0000000080000000 + 0xfff8;
+ mbox = .;
+ .mbox : { QUAD(0x0) }
+ . = 0x0000000080000000 + 0x80000;
+ kernel = .;
+ .kernel : { /home/assin/linux/linux_mainline/arch/arm64/boot/Image }
+ . = 0x0000000080000000 + 0x08000000;
+ dtb = .;
+ .dtb : { ./fdt.dtb }
+ . = 0x0000000080000000 + 0x10000000;
+ filesystem = .;
+ .data : { *(.data) }
+ .bss : { *(.bss) }
+}
