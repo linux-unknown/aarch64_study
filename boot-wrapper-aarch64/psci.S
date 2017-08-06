@@ -96,7 +96,7 @@ psci_call64:
 	b.eq	psci_cpu_off
 
 	ldr	x7, =PSCI_CPU_ON
-	cmp	x0, x7
+	cmp	x0, x7     /*x0 function ID*/
 	b.eq	psci_cpu_on
 
 	mov	x0, PSCI_RET_NOT_IMPL
@@ -160,17 +160,17 @@ psci_cpu_on:
  */
 find_logical_id:
 __find_logical_index:
-	adr	x2, id_table
-	mov	x1, xzr
-1:	mov	x3, #nr_cpus	// check we haven't walked off the end of the array
+	adr	x2, id_table /*id_table,相当于与一个数组，值分别是0x0,0x1,0x2,0x3，把id_table的地址赋值给x2*/
+	mov	x1, xzr /*将x1寄存器清零*/
+1:	mov	x3, #nr_cpus	// check we haven't walked off the end of the array，nr_cpus CPU的个数
 	cmp	x1, x3
-	b.gt	3f
-	ldr	x3, [x2, x1, lsl #3]
+	b.gt	3f /*如果x1大于x3，跳转到3处*/
+	ldr	x3, [x2, x1, lsl #3]	/*x2 = x1 * 8,x1递增，it_table一个数据占8个字节*/
 	cmp	x3, x0
-	b.eq	2f
+	b.eq	2f /*如果x3等于x0，则找到了core ID，低几位表示core ID*/
 	add	x1, x1, #1
 	b 1b
-2:	mov	x0, x1
+2:	mov	x0, x1/*x1保存这core ID，既在it_table中的位置*/
 	ret
 3:	mov	x0, #-1
 	ret
@@ -233,11 +233,11 @@ spin:
  * primary cpu, all others will be trapped in an infinite loop.
  */
 start_no_el3:
-	mrs	x0, mpidr_el1
+	mrs	x0, mpidr_el1/*读取core的ID，低8位表示core ID，[15:8]表示cluster id*/
 	ldr	x1, =MPIDR_ID_BITS
 	and	x0, x0, x1
 	bl	find_logical_id
-	cbz	x0, start_cpu0
+	cbz	x0, start_cpu0 /*如果x0为0，则跳转到start_cpu0，否则一直死循环*/
 spin_dead:
 	wfe
 	b	spin_dead
@@ -255,11 +255,11 @@ start_cpu0:
 	/*
 	 * Kernel parameters
 	 */
-	mov	x0, xzr
-	mov	x1, xzr
-	mov	x2, xzr
-	mov	x3, xzr
+	mov	x0, xzr	/*清零*/
+	mov	x1, xzr	/*清零*/
+	mov	x2, xzr	/*清零*/
+	mov	x3, xzr	/*清零*/
 
 	bl	ns_init_system
-	ldr	x0, =dtb
-	b	kernel
+	ldr	x0, =dtb  /*dtb的物理地址，dtb在model.lds中指定*/
+	b	kernel /*跳转到kernel地址处，kernel也是在model.lds中指定的*/
