@@ -128,7 +128,7 @@ switch_to_idmap:
 	isb
 
 	/* Identity map now active, branch back to phys/virt address */
-	ret	x28
+	ret	x28 /*跳转掉x28寄存器中的地址。如果ret后面没有指定寄存器，默认为x30*/
 
 switch_to_physmap:
 	mov	x28, x30

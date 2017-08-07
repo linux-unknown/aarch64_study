@@ -96,7 +96,7 @@ psci_call64:
 	b.eq	psci_cpu_off
 
 	ldr	x7, =PSCI_CPU_ON
-	cmp	x0, x7     /*x0 function ID*/
+	cmp	x0, x7
 	b.eq	psci_cpu_on
 
 	mov	x0, PSCI_RET_NOT_IMPL
@@ -160,24 +160,24 @@ psci_cpu_on:
  */
 find_logical_id:
 __find_logical_index:
-	adr	x2, id_table /*id_table,相当于与一个数组，值分别是0x0,0x1,0x2,0x3，把id_table的地址赋值给x2*/
-	mov	x1, xzr /*将x1寄存器清零*/
-1:	mov	x3, #nr_cpus	// check we haven't walked off the end of the array，nr_cpus CPU的个数
+	adr	x2, id_table
+	mov	x1, xzr
+1:	mov	x3, #nr_cpus	// check we haven't walked off the end of the array
 	cmp	x1, x3
-	b.gt	3f /*如果x1大于x3，跳转到3处*/
-	ldr	x3, [x2, x1, lsl #3]	/*x2 = x1 * 8,x1递增，it_table一个数据占8个字节*/
+	b.gt	3f
+	ldr	x3, [x2, x1, lsl #3]
 	cmp	x3, x0
-	b.eq	2f /*如果x3等于x0，则找到了core ID，低几位表示core ID*/
+	b.eq	2f
 	add	x1, x1, #1
 	b 1b
-2:	mov	x0, x1/*x1保存这core ID，既在it_table中的位置*/
+2:	mov	x0, x1
 	ret
 3:	mov	x0, #-1
 	ret
 
 setup_vector:
 	adr	x0, vector
-	msr	VBAR_EL3, x0
+	msr	VBAR_EL3, x0   /*配置EL3的异常基地址*/
 	isb
 	ret
 
@@ -194,7 +194,7 @@ start_el3:
 
 	adr	x2, branch_table
 	adr	x1, start_cpu0
-	str	x1, [x2]
+	str	x1, [x2]   /*把start_cpu0写入branch_table*/
 	sevl
 	b	spin
 
@@ -213,19 +213,26 @@ spin:
 	adr	x1, branch_table
 	mov	x3, #ADDR_INVALID
 
-	add	x1, x1, x0, lsl #3
+	add	x1, x1, x0, lsl #3   /*x0为core id*/
 
+/*如果不是core 0则会在这里一直循环，在core 0起来后，会把branch_table地址对应core的地址处写入core需要执行的地址*/
 1:	wfe
 	ldr	x2, [x1]
 	cmp	x2, x3
 	b.eq	1b
 
-	ldr	x0, =SCTLR_EL2_RESET
+	ldr	x0, =SCTLR_EL2_RESET   /*(3 << 28 | 3 << 22 | 1 << 18 | 1 << 16 | 1 << 11 | 3 << 4)*/
 	msr	sctlr_el2, x0
 
 	mov	x3, #SPSR_KERNEL
 	adr	x4, el2_trampoline
 	mov	x0, x2
+	
+	/**/
+	*msr	elr_el3, x4 //el2_trampoline  //异常返回时PC的地址
+	*msr	spsr_el3, x3 //异常返回的设置，返回到EL2h
+	*eret
+	*/
 	drop_el	x3, x4
 
 /*
@@ -233,11 +240,11 @@ spin:
  * primary cpu, all others will be trapped in an infinite loop.
  */
 start_no_el3:
-	mrs	x0, mpidr_el1/*读取core的ID，低8位表示core ID，[15:8]表示cluster id*/
+	mrs	x0, mpidr_el1
 	ldr	x1, =MPIDR_ID_BITS
 	and	x0, x0, x1
 	bl	find_logical_id
-	cbz	x0, start_cpu0 /*如果x0为0，则跳转到start_cpu0，否则一直死循环*/
+	cbz	x0, start_cpu0
 spin_dead:
 	wfe
 	b	spin_dead
@@ -247,7 +254,7 @@ spin_dead:
  * Clean and invalidate the caches at EL2 to simplify EL3's cache usage.
  */
 el2_trampoline:
-	mov	x15, x0
+	mov	x15, x0  /*x0为从branch_table读出的对应core的其实地址，对于core 0为start_cpu0地址，对于其他core 则为kernel启动后写入的地址，为secondary_boot*/
 	bl	flush_caches
 	br	x15
 
@@ -255,11 +262,11 @@ start_cpu0:
 	/*
 	 * Kernel parameters
 	 */
-	mov	x0, xzr	/*清零*/
-	mov	x1, xzr	/*清零*/
-	mov	x2, xzr	/*清零*/
-	mov	x3, xzr	/*清零*/
+	mov	x0, xzr
+	mov	x1, xzr
+	mov	x2, xzr
+	mov	x3, xzr
 
 	bl	ns_init_system
-	ldr	x0, =dtb  /*dtb的物理地址，dtb在model.lds中指定*/
-	b	kernel /*跳转到kernel地址处，kernel也是在model.lds中指定的*/
+	ldr	x0, =dtb
+	b	kernel
