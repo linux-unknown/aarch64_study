@@ -91,7 +91,7 @@ SECTIONS
 
 PSCI： **Power State Coordination Interface**提供了一个通用接口用于core的电源管理，其中就包括了core的Secondary core boot。具体的说明可以参考文档：DEN0022C_Power_State_Coordination_Interface.pdf。下载地址：http://101.96.8.165/infocenter.arm.com/help/topic/com.arm.doc.den0022c/DEN0022C_Power_State_Coordination_Interface.pdf
 
-###boot.S 没有EL3
+### boot.S 没有EL3
 
 ```assembly
 #include "common.S"
