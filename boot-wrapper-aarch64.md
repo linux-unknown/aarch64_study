@@ -1,9 +1,9 @@
-#boot-wrapper-aarch64
+# boot-wrapper-aarch64
 
 ***
 **boot-wrapper-aarch64作为一个简单的boot loader用于启动arm64 linux，该代码会将kernel、dtb、文件系统（如果选择的话）打包成一个文件linux-system.axf。**
 ***
-##linux-system.axf生成过程
+## linux-system.axf生成过程
 
 编译过程的log如下：
 
