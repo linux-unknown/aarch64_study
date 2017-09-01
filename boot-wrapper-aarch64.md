@@ -457,9 +457,13 @@ el2_trampoline:
 	br	x15	/*core 0为start_cpu0，其他core为secondary_boot*/
 ```
 
-###secondary core启动过程
+### secondary core启动过程
 
-在core 0启动linux kernel之后，会进行psci初始化：
+***
+
+#### psci init
+
+在core 0启动linux kernel之后，会进行psci初始化
 
 ```c
 static const struct of_device_id psci_of_match[] __initconst = {
@@ -556,9 +560,25 @@ static int get_set_conduit_method(struct device_node *np)
 ```
 
 PSCI\_0\_2\_FN\_CPU_OFF,PSCI\_0\_2\_FN64_CPU_ON为ARM公司定义的编号,称作**SMC Function Identifier**，不同SMC Function Identifier代表不同功能。改编后可以见文档：ARM_DEN0028A_SMC_Calling_Convention.pdf。
-![PSCI SMC Function Identifier范围](psci.JPG)
 
+| SMC Function Identifier | Reserved use and sub-range ownership | Notes                                    |
+| :---------------------- | :----------------------------------- | :--------------------------------------- |
+| 0xC4000000-0xC400001F   | PSCI SMC64 bit Calls                 | A range of SMC calls. See [5] for details of |
 
+####  PSCI\_0\_2\_FN64_CPU_ON
+
+```c
+/* PSCI v0.2 interface */
+#define PSCI_0_2_FN_BASE			0x84000000
+#define PSCI_0_2_FN(n)				(PSCI_0_2_FN_BASE + (n))
+#define PSCI_0_2_64BIT				0x40000000
+#define PSCI_0_2_FN64_BASE			(PSCI_0_2_FN_BASE + PSCI_0_2_64BIT)
+#define PSCI_0_2_FN64(n)			(PSCI_0_2_FN64_BASE + (n))
+
+#define PSCI_0_2_FN64_CPU_ON		PSCI_0_2_FN64(3)
+```
+
+#### boot secondary cores
 
 在smp_init中会启动其他的core
 
@@ -623,7 +643,6 @@ out:
 
 	return ret;
 }
-
 ```
 
 ```c
