@@ -16,7 +16,7 @@ configure: WARNING: you should use --build, --host, --target
 checking build system type... Invalid configuration `rw': machine `rw' not recognized
 configure: error: /bin/sh ./config.sub rw failed
 
-####编译单独文件过程
+#### 编译单独文件过程
 ```c
 aarch64-linux-gnu-gcc  -g -O2 -DCNTFRQ=0x01800000	 -DCPU_IDS=0x0,0x1,0x2,0x3 -DSYSREGS_BASE=0x000000001c010000 -DUART_BASE=0x000000001c090000  -DGIC_CPU_BASE=0x000000002c002000 -DGIC_DIST_BASE=0x000000002c001000 -c -o boot.o boot.S
 aarch64-linux-gnu-gcc  -g -O2 -DCNTFRQ=0x01800000	 -DCPU_IDS=0x0,0x1,0x2,0x3 -DSYSREGS_BASE=0x000000001c010000 -DUART_BASE=0x000000001c090000  -DGIC_CPU_BASE=0x000000002c002000 -DGIC_DIST_BASE=0x000000002c001000 -c -o cache.o cache.S
@@ -25,7 +25,7 @@ aarch64-linux-gnu-gcc  -g -O2 -DCNTFRQ=0x01800000	 -DCPU_IDS=0x0,0x1,0x2,0x3 -DS
 aarch64-linux-gnu-gcc  -g -O2 -DCNTFRQ=0x01800000	 -DCPU_IDS=0x0,0x1,0x2,0x3 -DSYSREGS_BASE=0x000000001c010000 -DUART_BASE=0x000000001c090000  -DGIC_CPU_BASE=0x000000002c002000 -DGIC_DIST_BASE=0x000000002c001000 -c -o ns.o ns.S
 aarch64-linux-gnu-gcc  -g -O2 -DCNTFRQ=0x01800000	 -DCPU_IDS=0x0,0x1,0x2,0x3 -DSYSREGS_BASE=0x000000001c010000 -DUART_BASE=0x000000001c090000  -DGIC_CPU_BASE=0x000000002c002000 -DGIC_DIST_BASE=0x000000002c001000 -c -o psci.o psci.S
 ```
-####生成连接脚本model.lds
+#### 生成连接脚本model.lds
 
 ```c
 aarch64-linux-gnu-gcc -E  -ansi -DPHYS_OFFSET=0x0000000080000000 -DMBOX_OFFSET=0xfff8 -DKERNEL_OFFSET=0x80000 -DFDT_OFFSET=0x08000000 -DFS_OFFSET=0x10000000 -DKERNEL=/home/assin/linux/linux_mainline/arch/arm64/boot/Image -DFILESYSTEM= -DBOOTMETHOD=psci.o -DGIC=gic.o -P -C -o model.lds model.lds.S
@@ -126,7 +126,7 @@ _start:
 
 	.org	0x100
 ```
-####start_no_el3
+#### start_no_el3
 ```assembly
 /*
  * This PSCI implementation requires EL3. Without EL3 we'll only boot the
@@ -143,7 +143,7 @@ spin_dead:					/*primary cpu的logic id为0，如果x0不为0则表示为其他�
 	wfe
 	b	spin_dead
 ```
-####find_logical_id
+#### find_logical_id
 ```assembly
 /*
  * Takes masked MPIDR in x0, returns logical id in x0
@@ -174,7 +174,7 @@ __id_end:
 
 .equ	nr_cpus, ((__id_end - id_table) / 8)/*总共CPU的个数*/
 ```
-####start_cpu0
+#### start_cpu0
 ```assembly
 start_cpu0:
 	/*
@@ -191,7 +191,7 @@ start_cpu0:
 	b	kernel /*跳转到kernel*/
 ```
 
-###boot.S 有EL3
+### boot.S 有EL3
 
 ```assembly
 #include "common.S"
@@ -226,7 +226,7 @@ _start:
 
 	.org	0x100
 ```
-####gic_secure_init
+#### gic_secure_init
 ```assembly
 /*
  * gic.S - Secure gic initialisation for stand-alone Linux booting
@@ -837,7 +837,7 @@ psci_cpu_on:
 	mov	x30, x15
 	eret
 ```
-####其他core的执行过程
+#### 其他core的执行过程
 ```
 1:	wfe
 	ldr	x2, [x1]
