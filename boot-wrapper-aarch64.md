@@ -7,13 +7,17 @@
 
 编译过程的log如下：
 
-make_linux_axf.sh脚本中集成了boot-wrapper-aarch64的配置过程，**稍后贴出该脚本内容**
+make_linux_axf.sh脚本中集成了boot-wrapper-aarch64的配置如下
+
+```shell
+./configure --enable-psci=yes --host=aarch64-linux-gnu --with-kernel-dir=/home/assin/linux/linux_mainline --with-dtb=/home/assin/linux/linux_mainline/arc    h/arm64/boot/dts/arm/foundation-v8.dtb  --with-cmdline="console=ttyAMA0  earlyprintk=pl011,0x1c090000 consolelog=9 rw root=/dev/vda2"
+```
 
 assin@assin-pc:~/armv8/boot-wrapper-aarch64$ ./make_linux_axf.sh 
 
 test -z "linux-system.axf boot.o cache.o gic.o mmu.o ns.o psci.o model.lds fdt.dtb" || rm -f linux-system.axf boot.o cache.o gic.o mmu.o ns.o psci.o model.lds fdt.dtb
 configure: WARNING: you should use --build, --host, --target
-checking build system type... Invalid configuration `rw': machine `rw' not recognized
+checking build system type... Invalid configuration \`rw': machine `rw' not recognized
 configure: error: /bin/sh ./config.sub rw failed
 
 #### 编译单独文件过程
